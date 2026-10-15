@@ -27,7 +27,7 @@ func TestDownstreamTLSHandshakeSignatures(t *testing.T) {
 		"rsa_pkcs1_sha256", "rsa_pkcs1_sha384", "rsa_pkcs1_sha512", "ed25519",
 	}, common.TlsParams.SignatureAlgorithms)
 	require.Len(t, common.TlsCertificateSdsSecretConfigs, 1)
-	require.Contains(t, common.TlsCertificateSdsSecretConfigs[0].Name, "gateway-cert")
+	require.Equal(t, "cilium-secrets/cilium-sync-secret-49c51718df79f249150d1fa595a149ce110851050da7d10be73e0c03c47378d9", common.TlsCertificateSdsSecretConfigs[0].Name)
 	require.Nil(t, common.TlsCertificateSdsSecretConfigs[0].SdsConfig)
 	require.Equal(t, envoytls.TlsParameters_TLS_AUTO, common.TlsParams.TlsMaximumProtocolVersion)
 }
