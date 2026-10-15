@@ -908,6 +908,22 @@ func toTransportSocket(ciliumSecretNamespace string, tls []model.TLSSecret) *env
 
 	downStreamContext := envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext{
 		CommonTlsContext: &envoy_extensions_transport_sockets_tls_v3.CommonTlsContext{
+			// Require modern handshake signatures independently of certificate type.
+			// TLS 1.2 can otherwise negotiate SHA-1 with an ECDSA certificate.
+			TlsParams: &envoy_extensions_transport_sockets_tls_v3.TlsParameters{
+				TlsMinimumProtocolVersion: envoy_extensions_transport_sockets_tls_v3.TlsParameters_TLSv1_2,
+				SignatureAlgorithms: []string{
+					"ecdsa_secp256r1_sha256",
+					"ecdsa_secp384r1_sha384",
+					"rsa_pss_rsae_sha256",
+					"rsa_pss_rsae_sha384",
+					"rsa_pss_rsae_sha512",
+					"rsa_pkcs1_sha256",
+					"rsa_pkcs1_sha384",
+					"rsa_pkcs1_sha512",
+					"ed25519",
+				},
+			},
 			TlsCertificateSdsSecretConfigs: tlsSdsConfig,
 		},
 	}

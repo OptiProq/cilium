@@ -1,7 +1,7 @@
 metadata:
-  creationTimestamp: null
   annotations:
     cec.cilium.io/use-original-source-address: "false"
+  creationTimestamp: null
   name: cilium-ingress-dummy-namespace-dummy-ingress
   namespace: dummy-namespace
 spec:
@@ -129,6 +129,18 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-6b9e9e2492d76369e93988d03c345e488b95b4dda1103168b1e6ff30702df36d
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     - filterChainMatch:
         serverNames:
         - very-secure.server.com
@@ -177,6 +189,18 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-d24305e95e142f8895855d63e1425e45b8eaed323a0eab4eb84e9d3334df4051
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
