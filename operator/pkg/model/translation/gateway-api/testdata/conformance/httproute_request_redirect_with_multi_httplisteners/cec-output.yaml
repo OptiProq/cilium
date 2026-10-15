@@ -1,7 +1,7 @@
 metadata:
-  creationTimestamp: null
   annotations:
     cec.cilium.io/use-original-source-address: "false"
+  creationTimestamp: null
   labels:
     gateway.networking.k8s.io/gateway-name: same-namespace
   name: cilium-gateway-same-namespace
@@ -108,6 +108,19 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-e9ef3f30ff0776a386a0fdaef76491d6447cab27f250f6d5b24e22d1698514b7
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - ecdsa_secp521r1_sha512
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

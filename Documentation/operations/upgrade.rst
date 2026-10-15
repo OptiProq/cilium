@@ -576,3 +576,18 @@ policies are now valid.
       level=info msg="All CCNPs and CNPs valid!"
 
 Once they are valid you can continue with the upgrade process. :ref:`cleanup_preflight_check`
+
+Downstream TLS handshake signatures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generated Gateway API and Ingress TLS contexts now require TLS 1.2 or newer and
+allow only modern handshake signatures. SHA-1 and SHA-224 signatures are no
+longer offered or accepted by this downstream policy. This is independent of
+the certificate signature hash: TLS 1.2 could previously negotiate ECDSA-SHA1
+even with an ECDSA P-256 certificate signed using SHA-256.
+
+Clients must support ECDSA with SHA-256/384/512, RSA PKCS1 or RSA-PSS RSAE with
+SHA-256/384/512, or Ed25519. Update clients that only support weak signatures
+before upgrading. Modern P-521 certificates retain their SHA-512 signature
+scheme. Certificate SDS references, frontend client-certificate validation,
+ALPN and the upper TLS protocol version remain unchanged.
