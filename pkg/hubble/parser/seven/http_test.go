@@ -708,3 +708,100 @@ func TestDecodeL7HTTPRequestPasswordRedact(t *testing.T) {
 		Protocol: "HTTP/1.1",
 	}, f.GetL7().GetHttp())
 }
+
+// OptiProq INFRA-199: an allowlisted x-request-id keeps only canonical values.
+func TestFilterHeaderCanonicalRequestID(t *testing.T) {
+	allow := options.HubbleRedactSettings{
+		Enabled: true,
+		RedactHttpHeaders: options.HttpHeadersList{
+			Allow: map[string]struct{}{"x-request-id": {}},
+			Deny:  map[string]struct{}{},
+		},
+	}
+	deny := options.HubbleRedactSettings{
+		Enabled: true,
+		RedactHttpHeaders: options.HttpHeadersList{
+			Allow: map[string]struct{}{},
+			Deny:  map[string]struct{}{"x-request-id": {}},
+		},
+	}
+	tests := []struct {
+		name, key, val string
+		settings       options.HubbleRedactSettings
+		kept           bool
+	}{
+		{"v4", "x-request-id", "3bbba2a9-cf74-4054-a4d9-7357523b9943", allow, true},
+		{"v7", "X-Request-Id", "019a4f6e-1c2d-7abc-8def-0123456789ab", allow, true},
+		{"envoy trace nibble", "x-request-id", "3bbba2a9-cf74-b054-a4d9-7357523b9943", allow, true},
+		{"uppercase", "x-request-id", "3BBBA2A9-CF74-4054-A4D9-7357523B9943", allow, false},
+		{"braces", "x-request-id", "{3bbba2a9-cf74-4054-a4d9-7357523b9943}", allow, false},
+		{"urn", "x-request-id", "urn:uuid:3bbba2a9-cf74-4054-a4d9-7357523b9943", allow, false},
+		{"compact", "x-request-id", "3bbba2a9cf744054a4d97357523b9943", allow, false},
+		{"too long", "x-request-id", "3bbba2a9-cf74-4054-a4d9-7357523b9943a", allow, false},
+		{"misplaced hyphen", "x-request-id", "3bbba2a9c-f74-4054-a4d9-7357523b9943", allow, false},
+		{"pii-like", "x-request-id", "alice@example.com", allow, false},
+		{"empty", "x-request-id", "", allow, false},
+		{"other allowed header unchanged", "x-request-id-other", "free text", options.HubbleRedactSettings{
+			Enabled: true,
+			RedactHttpHeaders: options.HttpHeadersList{
+				Allow: map[string]struct{}{"x-request-id-other": {}},
+				Deny:  map[string]struct{}{},
+			},
+		}, true},
+		{"deny list unchanged", "x-request-id", "3bbba2a9-cf74-4054-a4d9-7357523b9943", deny, false},
+		{"redact disabled unchanged", "x-request-id", "free text", options.HubbleRedactSettings{}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterHeader(tt.key, tt.val, tt.settings)
+			if tt.kept {
+				assert.Equal(t, tt.val, got)
+			} else {
+				assert.Equal(t, defaults.SensitiveValueRedacted, got)
+			}
+		})
+	}
+}
+
+// The guard runs where flows are built, before the ring, relay or export:
+// a decoded request keeps the canonical ID and redacts a forged one.
+func TestDecodeL7HTTPRequestCanonicalRequestID(t *testing.T) {
+	requestPath, err := url.Parse("http://myhost/some/path")
+	require.NoError(t, err)
+	for _, tc := range []struct{ value, want string }{
+		{"3bbba2a9-cf74-4054-a4d9-7357523b9943", "3bbba2a9-cf74-4054-a4d9-7357523b9943"},
+		{"forged value", defaults.SensitiveValueRedacted},
+	} {
+		lr := &accesslog.LogRecord{
+			Type:                accesslog.TypeRequest,
+			Timestamp:           fakeTimestamp,
+			NodeAddressInfo:     fakeNodeInfo,
+			ObservationPoint:    accesslog.Ingress,
+			SourceEndpoint:      fakeSourceEndpoint,
+			DestinationEndpoint: fakeDestinationEndpoint,
+			IPVersion:           accesslog.VersionIPv4,
+			Verdict:             accesslog.VerdictForwarded,
+			TransportProtocol:   accesslog.TransportProtocol(u8proto.TCP),
+			HTTP: &accesslog.LogRecordHTTP{
+				Method:   "GET",
+				URL:      requestPath,
+				Protocol: "HTTP/1.1",
+				Headers: http.Header{
+					"X-Request-Id":  {tc.value},
+					"Authorization": {"Bearer secret"},
+				},
+			},
+		}
+		opts := []options.Option{options.WithRedact(true, true, []string{"x-request-id"}, []string{})}
+		parser, err := New(hivetest.Logger(t), nil, nil, nil, nil, opts...)
+		require.NoError(t, err)
+		f := &flowpb.Flow{}
+		require.NoError(t, parser.Decode(lr, f))
+		got := map[string]string{}
+		for _, h := range f.GetL7().GetHttp().GetHeaders() {
+			got[h.Key] = h.Value
+		}
+		assert.Equal(t, tc.want, got["X-Request-Id"])
+		assert.Equal(t, defaults.SensitiveValueRedacted, got["Authorization"])
+	}
+}
