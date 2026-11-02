@@ -83,6 +83,14 @@ func filterHeader(key string, value string, redactSettings options.HubbleRedactS
 		return defaults.SensitiveValueRedacted
 	}
 	if _, ok := redactSettings.RedactHttpHeaders.Allow[strings.ToLower(key)]; ok {
+		if strings.EqualFold(key, requestIDHeader) && !canonicalRequestID(value) {
+			// OptiProq INFRA-199: an allowlisted request ID is retained only in
+			// canonical UUID form. Other text is redacted before the ring, relay
+			// and node export. UUID shape is not provenance and does not prove
+			// the value is free of personal data: a caller can still send a
+			// canonical value, so a retained ID stays untrusted.
+			return defaults.SensitiveValueRedacted
+		}
 		return value
 	}
 	if _, ok := redactSettings.RedactHttpHeaders.Deny[strings.ToLower(key)]; ok {
@@ -93,6 +101,33 @@ func filterHeader(key string, value string, redactSettings options.HubbleRedactS
 		return defaults.SensitiveValueRedacted
 	}
 	return value
+}
+
+// requestIDHeader is the correlation header the gateway is expected to set.
+const requestIDHeader = "x-request-id"
+
+// canonicalRequestID reports whether value is a canonical lowercase UUID:
+// 8-4-4-4-12 lowercase hex. Any version or variant nibble is accepted, so
+// Envoy's trace-reason nibble and UUIDv7 both pass; braces, URN, compact,
+// uppercase and any other text do not.
+func canonicalRequestID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch i {
+		case 8, 13, 18, 23:
+			if c != '-' {
+				return false
+			}
+		default:
+			if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // filteredURL return a copy of the given URL potentially mutated depending on
