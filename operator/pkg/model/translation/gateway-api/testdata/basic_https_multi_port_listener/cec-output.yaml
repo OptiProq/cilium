@@ -1,7 +1,7 @@
 metadata:
-  creationTimestamp: null
   annotations:
     cec.cilium.io/use-original-source-address: "false"
+  creationTimestamp: null
   labels:
     gateway.networking.k8s.io/gateway-name: my-gateway
   name: cilium-gateway-my-gateway
@@ -136,6 +136,18 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-a5ba1128989878da9227e0a9811f15bf3089558812daadeaa5ec10f45caa5479
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
@@ -208,6 +220,18 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-a5ba1128989878da9227e0a9811f15bf3089558812daadeaa5ec10f45caa5479
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

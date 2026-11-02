@@ -1,7 +1,7 @@
 metadata:
-  creationTimestamp: null
   annotations:
     cec.cilium.io/use-original-source-address: "false"
+  creationTimestamp: null
   name: cilium-ingress-random-namespace-host-rules
   namespace: random-namespace
 spec:
@@ -104,6 +104,18 @@ spec:
           commonTlsContext:
             tlsCertificateSdsSecretConfigs:
             - name: cilium-secrets/cilium-sync-secret-de1e96197af3e410455aa0ba9ee53655cc11ded3b5594eef38841f3b6cce9a24
+            tlsParams:
+              signatureAlgorithms:
+              - ecdsa_secp256r1_sha256
+              - ecdsa_secp384r1_sha384
+              - rsa_pss_rsae_sha256
+              - rsa_pss_rsae_sha384
+              - rsa_pss_rsae_sha512
+              - rsa_pkcs1_sha256
+              - rsa_pkcs1_sha384
+              - rsa_pkcs1_sha512
+              - ed25519
+              tlsMinimumProtocolVersion: TLSv1_2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
